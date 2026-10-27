@@ -10,7 +10,7 @@ import { connectDB } from "@/lib/db";
 import { toProductDTO } from "@/lib/dto";
 import { isDuplicateKeyError } from "@/lib/mongo-errors";
 import { slugify } from "@/lib/slug";
-import type { ProductDTO, ProductListDTO } from "@/lib/types";
+import type { ProductColorDTO, ProductDTO, ProductListDTO } from "@/lib/types";
 import { escapeRegex, type ProductFilters, type ProductInput } from "@/lib/validation";
 import { Product, type ProductAttrs, type ProductRecord } from "@/models";
 
@@ -104,14 +104,16 @@ export async function getProductBySlug(slug: string): Promise<ProductDTO | null>
   return record ? toProductDTO(record) : null;
 }
 
-/** Colour names currently sold, for the colour filter. */
-export async function listColorNames(department?: Department): Promise<string[]> {
+/** Colours currently sold (name + swatch), for the colour filter. */
+export async function listColors(department?: Department): Promise<ProductColorDTO[]> {
   await connectDB();
-  const names = await Product.distinct("colors.name", {
-    isActive: true,
-    ...(department ? { department } : {}),
-  });
-  return (names as string[]).sort((a, b) => a.localeCompare(b));
+  const rows = await Product.aggregate<{ _id: string; hex: string }>([
+    { $match: { isActive: true, ...(department ? { department } : {}) } },
+    { $unwind: "$colors" },
+    { $group: { _id: "$colors.name", hex: { $first: "$colors.hex" } } },
+    { $sort: { _id: 1 } },
+  ]);
+  return rows.map((row) => ({ name: row._id, hex: row.hex }));
 }
 
 /** In-stock pieces from other categories that pair well with `product` ("Complete the look"). */

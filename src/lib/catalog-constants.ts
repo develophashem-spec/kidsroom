@@ -98,6 +98,19 @@ export function sizesFor(
   return CLOTHING_SIZES;
 }
 
+const TOPS: readonly Category[] = ["tshirts", "shirts", "tops", "hoodies", "knitwear"];
+const BOTTOMS: readonly Category[] = ["jeans", "trousers", "shorts", "skirts"];
+
+/** Categories that go well with a product of `category` ("Complete the look"). */
+export function complementaryCategories(category: Category): readonly Category[] {
+  if (TOPS.includes(category)) return [...BOTTOMS, "shoes", "jackets", "accessories"];
+  if (BOTTOMS.includes(category)) return [...TOPS, "shoes", "jackets", "accessories"];
+  if (category === "dresses") return ["shoes", "jackets", "accessories"];
+  if (category === "jackets") return [...TOPS, ...BOTTOMS, "shoes"];
+  if (category === "shoes") return [...TOPS, ...BOTTOMS, "accessories"];
+  return [...TOPS, "shoes"];
+}
+
 export const FITS = ["slim", "regular", "relaxed", "oversized"] as const;
 export type ProductFit = (typeof FITS)[number];
 
